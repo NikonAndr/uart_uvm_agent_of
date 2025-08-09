@@ -16,7 +16,6 @@ class uart_tx_seq1 extends uvm_sequence #(uart_tx_item);
             if (!req.randomize()) begin
                 `uvm_error("RAND", "[seq1] Randomization failed")
             end
-
             finish_item(req);
             //get_response(tx);
         end
