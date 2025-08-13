@@ -10,8 +10,6 @@ import uvm_pkg::*;
 `include "uart_agent.sv"
 `include "uart_test.sv"
 
-`timescale 1ns/1ps
-
 module top;
     bit clk = 1'b0;
 

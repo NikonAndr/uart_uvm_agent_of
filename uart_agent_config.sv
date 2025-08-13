@@ -1,3 +1,5 @@
+import uvm_pkg::*;
+`include "uvm_macros.svh"
 
 class uart_agent_config extends uvm_object;
     `uvm_object_utils(uart_agent_config)

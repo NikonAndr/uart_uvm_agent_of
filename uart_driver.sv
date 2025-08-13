@@ -1,3 +1,6 @@
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
 class uart_driver extends uvm_driver#(uart_tx_item);
     `uvm_component_utils(uart_driver)
 

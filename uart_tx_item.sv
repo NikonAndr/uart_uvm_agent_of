@@ -1,3 +1,6 @@
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
 class uart_tx_item extends uvm_sequence_item;
     //implemented tx transaction with fields declared random
     rand bit [7:0] data;

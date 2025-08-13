@@ -1,3 +1,6 @@
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
 class uart_test extends uvm_test;
     `uvm_component_utils(uart_test)
 

@@ -1,3 +1,6 @@
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
 class uart_monitor extends uvm_monitor;
     `uvm_component_utils(uart_monitor)
 
