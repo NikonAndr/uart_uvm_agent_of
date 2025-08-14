@@ -1,0 +1,15 @@
+=N:[UVMSource] Using sources from '/home/andrii/AltairDSim/2025.1/uvm/1.2'
+=N:[UsageMeter (2025-08-14 12:25:52 +0200)] Using /etc/ssl/certs as location of CA certificates to verify license server.
+=N:[UsageMeter (2025-08-14 12:25:53 +0200)] usage server initial connection
+=N:[License] 
+Licensed for Altair DSim Cloud.
+=N:[License] New lease granted.
+Analyzing...
+=E:[FileNotFound]:
+    The following files specified on the command line could not be opened:    
+
+    uart_uvm_agent_of/top.sv    
+
+    Simulator invoked from directory: /home/andrii/Projects/uart_uvm_agent_of    
+
+  Altair DSim version: 2025.1.0 (b:R #c:449 h:df8da7d488 os:rocky_8.10)

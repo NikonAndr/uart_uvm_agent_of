@@ -28,35 +28,83 @@ class uart_driver extends uvm_driver#(uart_tx_item);
     virtual task run_phase(uvm_phase phase);
         uart_tx_item tx;
 
-        @(negedge vif.rst);
-
-        //After a reset, the TX signal should be 1
-        vif.tx <= 1'b1; 
+        //Before Reset tx Value Should Be X
+        vif.tx <= 1'bx;
 
         forever begin
-            //Get next transaction from sequencer
-             seq_item_port.get_next_item(tx);
-
-            //Driver sends start_bit
-            vif.tx <= tx.start_bit;
-            repeat (cfg.bit_time) @(posedge vif.clk);
-
-            //Driver sends 8 bits of data LSB first
-            for (int i = 0; i < 8; i++) begin
-                vif.tx <= tx.data[i];
-                repeat (cfg.bit_time) @(posedge vif.clk);
+            if (vif.rst) begin 
+                drive_idle_during_reset();
+                continue;
             end
-
-            //Driver sends parity_bit
-            vif.tx <= tx.parity_bit;
-            repeat (cfg.bit_time) @(posedge vif.clk);
-
-            //Driver sends stop_bit
-            vif.tx <= tx.stop_bit;
-            repeat (cfg.bit_time) @(posedge vif.clk);
-
-            //Signal transaction is complete
+            
+            seq_item_port.get_next_item(tx);
+            send_uart_frame(tx);
             seq_item_port.item_done();
-        end
+            //Driver Log 
+            `uvm_info("DRIVER", $sformatf("DRIVER SENT: %s", tx.print_tx()), UVM_LOW)
+        end 
     endtask : run_phase
+
+    task drive_idle_during_reset();
+        vif.tx <= 1'b1;
+        @(negedge vif.rst);
+        //Run Idle until start bit
+        vif.tx <= 1'b1;
+    endtask : drive_idle_during_reset
+
+    task automatic wait_bit_or_reset(output bit interrupted);
+
+        interrupted = 0;
+
+        //Pre Check For Reset
+        if (vif.rst) begin
+            interrupted = 1;
+            return;
+        end
+
+        //Check For Reset During Current Bit 
+        fork : waiters 
+            begin : timer
+                #(cfg.var_ps * 1ps);
+            end 
+            begin : reset
+                @(posedge vif.rst);
+                interrupted = 1;
+            end 
+        join_any 
+        disable waiters;
+    endtask : wait_bit_or_reset
+
+    task automatic drive_bit_and_wait(bit val, output bit aborted);
+        //Pre Check For Reset
+        if (vif.rst) begin
+            aborted = 1;
+            return;
+        end
+
+        vif.tx <= val;
+        wait_bit_or_reset(aborted);
+    endtask : drive_bit_and_wait
+
+    task send_uart_frame(uart_tx_item tx);
+        bit aborted;
+
+        drive_bit_and_wait(tx.start_bit, aborted);
+        if (aborted) return;
+
+        for (int i = 0; i < 8; i++) begin
+            drive_bit_and_wait(tx.data[i], aborted);
+            if (aborted) return;
+        end
+
+        drive_bit_and_wait(tx.parity_bit, aborted);
+        if (aborted) return;
+
+        drive_bit_and_wait(tx.stop_bit, aborted);
+        if (aborted) return;
+
+        //After Stop Bit Return To idle 
+        vif.tx <= 1'b1;
+
+    endtask : send_uart_frame   
 endclass : uart_driver

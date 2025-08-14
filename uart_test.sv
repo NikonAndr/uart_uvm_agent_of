@@ -49,7 +49,7 @@ class uart_seq1_seq2_test extends uart_test;
         seq1.start(agent.sequencer);
 
         //10 us pause beetween seq1 and seq2
-        #(10000)
+        #(10000);
         $display("SEQ1 finished, starting SEQ2");
 
         //Start seq2, sends 10 transactions with random generated errors
@@ -57,7 +57,6 @@ class uart_seq1_seq2_test extends uart_test;
 
         //Wait for monitor to capture last transaction
         #(100000);
-
 
         //Drop objection to allow simulation to finish
         phase.drop_objection(this);
