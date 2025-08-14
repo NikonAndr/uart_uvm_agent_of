@@ -15,12 +15,14 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         super.build_phase(phase);
 
         //Retrieve virtual interface from config DB
-        if (!uvm_config_db#(virtual uart_if)::get(this, "", "vif", vif)) begin
+        //Added vif == null error handle
+        if (!uvm_config_db#(virtual uart_if)::get(this, "", "vif", vif) || vif == null) begin
             `uvm_fatal("NO_VIF", "Virtual interface not set for a driver")
         end
 
         //Retrieve configuration object from config DB
-        if (!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg)) begin
+        //Added cfg == null error handle 
+        if (!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
             `uvm_fatal("NO_CFG", "uart_agent_config not set for a driver")
         end
     endfunction : build_phase
@@ -52,13 +54,13 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         vif.tx <= 1'b1;
     endtask : drive_idle_during_reset
 
-    task automatic wait_bit_or_reset(output bit interrupted);
+    task automatic wait_bit_or_reset(output bit aborted);
 
-        interrupted = 0;
+        aborted = 0;
 
         //Pre Check For Reset
         if (vif.rst) begin
-            interrupted = 1;
+            aborted = 1;
             return;
         end
 
@@ -69,7 +71,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
             end 
             begin : reset
                 @(posedge vif.rst);
-                interrupted = 1;
+                aborted = 1;
             end 
         join_any 
         disable waiters;

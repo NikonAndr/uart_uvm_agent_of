@@ -1,3 +1,4 @@
+//Monitor + Driver test
 import uvm_pkg::*;
 `include "uvm_macros.svh"
 
@@ -7,6 +8,7 @@ class driver_test extends uvm_test;
     virtual uart_if vif;
     uart_sequencer sequencer;
     uart_driver driver;
+    uart_monitor monitor;
     uart_agent_config cfg;
 
     function new(string name, uvm_component parent);
@@ -27,9 +29,13 @@ class driver_test extends uvm_test;
         
         sequencer = uart_sequencer::type_id::create("sequencer", this);
         driver = uart_driver::type_id::create("driver", this);
+        monitor = uart_monitor::type_id::create("monitor", this);
         
         uvm_config_db#(virtual uart_if)    ::set(this, "driver", "vif",      vif);
         uvm_config_db#(uart_agent_config)  ::set(this, "driver", "uart_cfg", cfg);
+
+        uvm_config_db#(virtual uart_if)    ::set(this, "monitor", "vif",      vif);
+        uvm_config_db#(uart_agent_config)  ::set(this, "monitor", "uart_cfg", cfg);
 
     endfunction : build_phase
 

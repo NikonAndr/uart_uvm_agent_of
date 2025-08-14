@@ -1,6 +1,6 @@
 =N:[UVMSource] Using sources from '/home/andrii/AltairDSim/2025.1/uvm/1.2'
-=N:[UsageMeter (2025-08-14 12:25:52 +0200)] Using /etc/ssl/certs as location of CA certificates to verify license server.
-=N:[UsageMeter (2025-08-14 12:25:53 +0200)] usage server initial connection
+=N:[UsageMeter (2025-08-14 17:19:16 +0200)] Using /etc/ssl/certs as location of CA certificates to verify license server.
+=N:[UsageMeter (2025-08-14 17:19:16 +0200)] usage server initial connection
 =N:[License] 
 Licensed for Altair DSim Cloud.
 =N:[License] New lease granted.

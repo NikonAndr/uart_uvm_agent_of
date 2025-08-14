@@ -8,7 +8,7 @@ import uvm_pkg::*;
 `include "uart_sequences.sv"
 `include "uart_sequencer.sv"
 `include "uart_driver.sv"
-//`include "uart_monitor.sv"
+`include "uart_monitor.sv"
 //`include "uart_agent.sv"
 //`include "uart_test.sv"
 
@@ -26,12 +26,9 @@ module top;
     end
 
     initial begin
-        //test for waveform
-        vif.rst = 1'b0;
-        #10ns;
         //Reset before running program
         vif.rst = 1'b1;
-        #40ns;
+        #50ns;
         vif.rst = 1'b0;
     end
 
