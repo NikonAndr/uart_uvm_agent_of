@@ -61,9 +61,9 @@ class driver_test extends uvm_test;
         $display("SEQ1 finished, starting SEQ2");
 
         //reset test 
-        vif.rst <= 1;
-        #1ms;
-        vif.rst <= 0;
+        //vif.rst <= 1;
+        //#1ms;
+        //vif.rst <= 0;
 
         //Start seq2, sends 10 transactions with random generated errors
         seq2.start(sequencer);

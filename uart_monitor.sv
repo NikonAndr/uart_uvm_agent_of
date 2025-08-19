@@ -31,6 +31,7 @@ class uart_monitor extends uvm_monitor;
             `uvm_fatal("NO_CFG", "uart_agent_config not set for a monitor")
         end
 
+        //Calculate Half Bit time
         half_bit = (cfg.var_ps * 1ps) / 2;
     endfunction : build_phase
 
@@ -46,7 +47,7 @@ class uart_monitor extends uvm_monitor;
             //Wait for a start bit 
             wait (vif.tx == 0);
             #0;
-
+        
             tx = uart_tx_item::type_id::create("tx");
             capture_uart_frame(tx);
             //Monitor console log 
@@ -78,7 +79,7 @@ class uart_monitor extends uvm_monitor;
 
     task automatic capture_uart_frame(uart_tx_item tx);
         bit aborted;
-
+        
         #half_bit
         tx.start_bit = vif.tx;
         wait_bit_or_reset(aborted);

@@ -42,8 +42,6 @@ class uart_driver extends uvm_driver#(uart_tx_item);
             seq_item_port.get_next_item(tx);
             send_uart_frame(tx);
             seq_item_port.item_done();
-            //Driver Log 
-            `uvm_info("DRIVER", $sformatf("DRIVER SENT: %s", tx.print_tx()), UVM_LOW)
         end 
     endtask : run_phase
 
@@ -55,7 +53,6 @@ class uart_driver extends uvm_driver#(uart_tx_item);
     endtask : drive_idle_during_reset
 
     task automatic wait_bit_or_reset(output bit aborted);
-
         aborted = 0;
 
         //Pre Check For Reset

@@ -20,7 +20,6 @@ class uart_tx_seq1 extends uvm_sequence #(uart_tx_item);
                 `uvm_error("RAND", "[seq1] Randomization failed")
             end
             finish_item(req);
-            //get_response(tx);
         end
     endtask : body
 endclass : uart_tx_seq1
@@ -55,8 +54,6 @@ class uart_tx_seq2 extends uvm_sequence #(uart_tx_item);
             //Turn on constraints 
             req.valid_bits.constraint_mode(1);
             finish_item(req);
-            //No need for response, driver is not providing response, nothing's in the queue
-            //get_response(tx);
         end
     endtask : body
 endclass : uart_tx_seq2

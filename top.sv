@@ -9,21 +9,12 @@ import uvm_pkg::*;
 `include "uart_sequencer.sv"
 `include "uart_driver.sv"
 `include "uart_monitor.sv"
-//`include "uart_agent.sv"
-//`include "uart_test.sv"
-
-`include "driver_test.sv"
+`include "uart_agent.sv"
+`include "uart_test.sv"
 
 module top;
-    //Create Virtual interface
     uart_if vif();
     uart_agent_config cfg;
-
-    //waveform?
-    initial begin
-        $dumpfile("waves.vcd");
-        $dumpvars(0, top);
-    end
 
     initial begin
         //Reset before running program
@@ -37,7 +28,6 @@ module top;
     end
 
     initial begin 
-        //driver_test
         uvm_config_db#(virtual uart_if)::set(null, "*", "vif", vif);
 
         //Create configuration object
@@ -48,10 +38,12 @@ module top;
         cfg.calculate_var_ps();
         $display($sformatf("Bitrate: %0d, Var_ps: %0d", cfg.bitrate, cfg.var_ps));
 
-        //Temporary pass cfg to driver (test)
+        //Set config objects into UVM config DB
         uvm_config_db#(uart_agent_config)::set(null, "*", "uart_cfg", cfg);
+        uvm_config_db#(virtual uart_if)::set(null, "*", "vif", vif);
 
-        run_test("driver_test");
+        //Set Test Name Using +UVM_TESTNAME= 
+        run_test();
         $finish;
     end
 endmodule : top
