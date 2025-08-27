@@ -6,7 +6,7 @@ import uvm_pkg::*;
 `include "uart_tx_item.sv"
 `include "uart_agent_config.sv"
 `include "uart_sequences.sv"
-`include "uart_sequencer.sv"
+typedef uvm_sequencer#(uart_tx_item) uart_sequencer;
 `include "uart_driver.sv"
 `include "uart_monitor.sv"
 `include "uart_agent.sv"

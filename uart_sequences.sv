@@ -1,6 +1,3 @@
-import uvm_pkg::*;
-`include "uvm_macros.svh"
-
 //seq1 Randomly sends 10 transactions
 class uart_tx_seq1 extends uvm_sequence #(uart_tx_item);
     `uvm_object_utils(uart_tx_seq1)
