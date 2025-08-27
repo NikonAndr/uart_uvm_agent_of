@@ -3,14 +3,8 @@ import uvm_pkg::*;
 `include "uvm_macros.svh"
 
 `include "uart_if.sv"
-`include "uart_tx_item.sv"
-`include "uart_agent_config.sv"
-`include "uart_sequences.sv"
-typedef uvm_sequencer#(uart_tx_item) uart_sequencer;
-`include "uart_driver.sv"
-`include "uart_monitor.sv"
-`include "uart_agent.sv"
-`include "uart_test.sv"
+`include "uart_tb_pkg.sv"
+import uart_tb_pkg::*;
 
 module top;
     uart_if vif();
@@ -36,11 +30,12 @@ module top;
         //Set UART bitrate 
         cfg.randomize();
         cfg.calculate_var_ps();
-        $display($sformatf("Bitrate: %0d, Var_ps: %0d", cfg.bitrate, cfg.var_ps));
+        `uvm_info("BITRATE", $sformatf("Bitrate: %0d, Var_ps: %0d", cfg.bitrate, cfg.var_ps), UVM_NONE);
 
         //Set config objects into UVM config DB
         uvm_config_db#(uart_agent_config)::set(null, "*", "uart_cfg", cfg);
-        uvm_config_db#(virtual uart_if)::set(null, "*", "vif", vif);
+        uvm_config_db#(virtual uart_if.driver)::set(null, "*", "vif", vif);
+        uvm_config_db#(virtual uart_if.monitor)::set(null, "*", "vif", vif);
 
         //Set Test Name Using +UVM_TESTNAME= 
         run_test();

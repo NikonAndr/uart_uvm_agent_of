@@ -48,7 +48,7 @@ class uart_seq1_seq2_test extends uart_test;
 
         //10 us pause beetween seq1 and seq2
         #10us;
-        $display("SEQ1 finished, starting SEQ2");
+        `uvm_info("SEQUENCE", "SEQ1 finished, Starting SEQ2!", UVM_MEDIUM)
 
         //Start seq2, sends 10 transactions with random generated errors
         seq2.start(agent.sequencer);

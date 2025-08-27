@@ -1,7 +1,7 @@
 class uart_monitor extends uvm_monitor;
     `uvm_component_utils(uart_monitor)
 
-    virtual uart_if vif;
+    virtual uart_if.monitor vif;
     uart_agent_config cfg;
     //Sends captured transactions to scoreboard or other components
     uvm_analysis_port #(uart_tx_item) analysis_port;
@@ -17,13 +17,11 @@ class uart_monitor extends uvm_monitor;
         super.build_phase(phase);
 
         //Retrieve virtual interface from config DB
-        //Added vif == null Error Handle 
-        if(!uvm_config_db#(virtual uart_if)::get(this, "", "vif", vif) || vif == null) begin 
+        if(!uvm_config_db#(virtual uart_if.monitor)::get(this, "", "vif", vif)) begin 
             `uvm_fatal("NO_VIF", "Virtual interface not set for a monitor")
         end 
 
         //Retrieve configuration from config DB
-        //Added cfg == null Error Handle 
         if (!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
             `uvm_fatal("NO_CFG", "uart_agent_config not set for a monitor")
         end
@@ -62,7 +60,7 @@ class uart_monitor extends uvm_monitor;
         end
 
         //Check For Reset During Current Bit 
-        fork : waiters 
+        fork  
             begin : timer
                 #half_bit;
             end 
@@ -71,7 +69,7 @@ class uart_monitor extends uvm_monitor;
                 aborted = 1;
             end 
         join_any 
-        disable waiters;
+        disable fork;
     endtask : wait_bit_or_reset
 
     task automatic capture_uart_frame(uart_tx_item tx);

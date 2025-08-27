@@ -1,7 +1,7 @@
 class uart_driver extends uvm_driver#(uart_tx_item);
     `uvm_component_utils(uart_driver)
 
-    virtual uart_if vif;
+    virtual uart_if.driver vif;
     uart_agent_config cfg;
 
     function new(string name, uvm_component parent);
@@ -12,13 +12,11 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         super.build_phase(phase);
 
         //Retrieve virtual interface from config DB
-        //Added vif == null error handle
-        if (!uvm_config_db#(virtual uart_if)::get(this, "", "vif", vif) || vif == null) begin
+        if (!uvm_config_db#(virtual uart_if.driver)::get(this, "", "vif", vif)) begin
             `uvm_fatal("NO_VIF", "Virtual interface not set for a driver")
         end
 
         //Retrieve configuration object from config DB
-        //Added cfg == null error handle 
         if (!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
             `uvm_fatal("NO_CFG", "uart_agent_config not set for a driver")
         end
@@ -59,7 +57,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         end
 
         //Check For Reset During Current Bit 
-        fork : waiters 
+        fork
             begin : timer
                 #(cfg.var_ps * 1ps);
             end 
@@ -68,7 +66,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
                 aborted = 1;
             end 
         join_any 
-        disable waiters;
+        disable fork;
     endtask : wait_bit_or_reset
 
     task automatic drive_bit_and_wait(bit val, output bit aborted);
