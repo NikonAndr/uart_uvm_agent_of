@@ -13,15 +13,21 @@ class uart_env extends uvm_env;
         super.build_phase(phase);
         agent = uart_agent::type_id::create("agent", this);
 
+        //Create & Build Register Model (Block With R1/R2)
         reg_block = uart_reg_block::type_id::create("reg_block", this);
         reg_block.build();
 
+        //Automaticly Refresh Mirror Value 
+        reg_block.default_map.set_auto_predict(1);
+
+        //Create Adapter For Reg<->Bus Conversion
         reg_adapter = uart_reg_adapter::type_id::create("reg_adapter");
     endfunction : build_phase
 
     function void connect_phase(uvm_phase phase);
         super.connect_phase(phase);
 
+        //Pass The Sequencer And Adapter To Reg Block
         reg_block.default_map.set_sequencer(agent.sequencer, reg_adapter);
     endfunction : connect_phase
 

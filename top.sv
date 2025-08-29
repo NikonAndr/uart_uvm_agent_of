@@ -1,4 +1,3 @@
-timeunit 1ns; timeprecision 1ps;
 import uvm_pkg::*;
 `include "uvm_macros.svh"
 
@@ -7,6 +6,7 @@ import uvm_pkg::*;
 import uart_tb_pkg::*;
 
 module top;
+    timeunit 1ns; timeprecision 1ps;
     uart_if vif();
     uart_agent_config cfg;
 

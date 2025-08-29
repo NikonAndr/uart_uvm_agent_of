@@ -45,8 +45,6 @@ class uart_monitor extends uvm_monitor;
         
             tx = uart_tx_item::type_id::create("tx");
             capture_uart_frame(tx);
-            //Monitor console log 
-            `uvm_info("MONITOR", $sformatf("MONITOR captured %s", tx.print_tx()), UVM_MEDIUM)
         end
     endtask : run_phase
 
@@ -94,10 +92,10 @@ class uart_monitor extends uvm_monitor;
 
         #half_bit;
         tx.stop_bit = vif.tx;
-        wait_bit_or_reset(aborted);
-        if (aborted) return;
         
         analysis_port.write(tx);
+        //Monitor Log
+        `uvm_info("MONITOR", $sformatf("Monitor captured %s", tx.print_tx()), UVM_MEDIUM)
     endtask : capture_uart_frame  
         
 endclass : uart_monitor

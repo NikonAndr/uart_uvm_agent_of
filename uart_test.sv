@@ -69,19 +69,32 @@ class uart_reg_test extends uart_test;
         uvm_status_e   status;
         uvm_reg_data_t value;
         phase.raise_objection(this);
-            env.reg_block.reset();
 
-            value = $urandom_range(0, 15);
-            `uvm_info("REG TEST", $sformatf("Writing %0h to R1", value), UVM_MEDIUM)
+        //Reset Register Model 
+        env.reg_block.reset();
+        
+        //Write Random Value Into R1, Check If Mirror Value == Written Value
+        value = $urandom_range(0, 15);
+        `uvm_info("REG TEST", $sformatf("Writing %0h to R1", value), UVM_MEDIUM)
 
-            env.reg_block.R1.write(status, value);
+        env.reg_block.R1.write(status, value);
 
-            if (env.reg_block.R1.get_mirrored_value() != value) begin
-                `uvm_error("MIRROR", $sformatf("Mismatch! Mirror=%0h Expected=%0h",
-                        env.reg_block.R1.get_mirrored_value(), value))
-            end else begin
-                `uvm_info("MIRROR", $sformatf("OK: Mirror=%0h", value), UVM_LOW)
-            end
+        if (env.reg_block.R1.get_mirrored_value() != value) begin
+            `uvm_error("MIRROR", $sformatf("Mismatch! Mirror=%0h Expected=%0h",
+                    env.reg_block.R1.get_mirrored_value(), value))
+        end else begin
+            `uvm_info("MIRROR", $sformatf("OK: Mirror=%0h", value), UVM_LOW)
+        end
+
+        //Write Random Value to R2
+        //Expect: Transaction Goes Out On Uart Tx, Mirror Remains Unchainged
+        value = $urandom_range(0, 15);
+        `uvm_info("REG TEST", $sformatf("Writing %0h to R2", value), UVM_MEDIUM)
+
+        env.reg_block.R2.write(status, value);
+
+        `uvm_info("MIRROR", $sformatf("R2 uunchanged as R0: Mirror=%0h", env.reg_block.R2.get_mirrored_value()), UVM_LOW)
+
         phase.drop_objection(this);
     endtask : run_phase
 endclass : uart_reg_test
