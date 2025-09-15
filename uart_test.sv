@@ -68,6 +68,9 @@ class uart_reg_test extends uart_test;
     virtual task run_phase(uvm_phase phase);
         uvm_status_e   status;
         uvm_reg_data_t value;
+        uvm_reg_data_t r2_value_before;
+        uvm_reg_data_t r2_value_after;
+        
         phase.raise_objection(this);
 
         //Reset Register Model 
@@ -83,18 +86,24 @@ class uart_reg_test extends uart_test;
             `uvm_error("MIRROR", $sformatf("Mismatch! Mirror=%0h Expected=%0h",
                     env.reg_block.R1.get_mirrored_value(), value))
         end else begin
-            `uvm_info("MIRROR", $sformatf("OK: Mirror=%0h", value), UVM_LOW)
+            `uvm_info("MIRROR", $sformatf("OK: Mirror=%0h", value), UVM_MEDIUM)
         end
 
-        //Write Random Value to R2
-        //Expect: Transaction Goes Out On Uart Tx, Mirror Remains Unchainged
+        //Write Random Value to R2r
+        //Expect: Transaction Goes Out On Uart Tx, Miror Remains Unchanged
+
+        r2_value_before = env.reg_block.R2.get_mirrored_value();
         value = $urandom_range(0, 15);
         `uvm_info("REG TEST", $sformatf("Writing %0h to R2", value), UVM_MEDIUM)
 
         env.reg_block.R2.write(status, value);
+        r2_value_after = env.reg_block.R2.get_mirrored_value();
 
-        `uvm_info("MIRROR", $sformatf("R2 unchanged as R0: Mirror=%0h", env.reg_block.R2.get_mirrored_value()), UVM_LOW)
-
+        if (r2_value_before != r2_value_after) begin
+            `uvm_error ("REG TEST", "R2 value changed after write(RO)!")
+        end else begin 
+            `uvm_info("MIRROR", $sformatf("R2 unchanged as R0: Mirror=%0h", env.reg_block.R2.get_mirrored_value()), UVM_MEDIUM)
+        end
         phase.drop_objection(this);
     endtask : run_phase
 endclass : uart_reg_test

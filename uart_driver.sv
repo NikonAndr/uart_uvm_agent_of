@@ -28,15 +28,46 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         //Before Reset tx Value Should Be X
         vif.tx <= 1'bx;
 
+        //Get Next Item Rework 
         forever begin
+            bit got_item;
+            bit got_reset;
+            process p_get;
+            process p_rst;
+            
+            got_item = 0;
+            got_reset = 0;
+
             if (vif.rst) begin 
                 drive_idle_during_reset();
                 continue;
             end
-            
-            seq_item_port.get_next_item(tx);
+
+            fork
+                begin : get_item
+                    p_get = process::self();
+                    //Get Next Item Blocks Only This Thread
+                    seq_item_port.get_next_item(tx);
+                    got_item = 1;
+                end
+                begin : wait_rst
+                    p_rst = process::self();
+                    @(posedge vif.rst);
+                    got_reset = 1;
+                end
+            join_any
+
+            if (p_get != null && p_get.status==process::RUNNING) p_get.kill();
+            if (p_rst != null && p_rst.status==process::RUNNING) p_rst.kill();
+
+            if (got_reset) begin
+                drive_idle_during_reset();
+                continue;
+            end
+
             send_uart_frame(tx);
             seq_item_port.item_done();
+            
         end 
     endtask : run_phase
 
@@ -67,7 +98,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
             end 
         join_any 
         disable fork;
-    endtask : wait_bit_or_reset
+    endtask : wait_bit_or_reset 
 
     task automatic drive_bit_and_wait(bit val, output bit aborted);
         //Pre Check For Reset
