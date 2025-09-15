@@ -17,10 +17,6 @@ module top;
         vif.rst = 1'b0;
     end
 
-    initial begin
-        `uvm_info("SEED", $sformatf("RANDOM SEED: %0d", $get_initial_random_seed()), UVM_NONE)
-    end
-
     initial begin 
         uvm_config_db#(virtual uart_if)::set(null, "*", "vif", vif);
 
@@ -28,7 +24,9 @@ module top;
         cfg = uart_agent_config::type_id::create("cfg");
 
         //Set UART bitrate 
-        cfg.randomize();
+        if (!cfg.randomize()) begin
+            `uvm_error("RANDOMIZE", "Randomize failed!")
+        end
         cfg.calculate_var_ps();
         `uvm_info("BITRATE", $sformatf("Bitrate: %0d, Var_ps: %0d", cfg.bitrate, cfg.var_ps), UVM_NONE);
 

@@ -93,7 +93,7 @@ class uart_reg_test extends uart_test;
 
         env.reg_block.R2.write(status, value);
 
-        `uvm_info("MIRROR", $sformatf("R2 uunchanged as R0: Mirror=%0h", env.reg_block.R2.get_mirrored_value()), UVM_LOW)
+        `uvm_info("MIRROR", $sformatf("R2 unchanged as R0: Mirror=%0h", env.reg_block.R2.get_mirrored_value()), UVM_LOW)
 
         phase.drop_objection(this);
     endtask : run_phase
