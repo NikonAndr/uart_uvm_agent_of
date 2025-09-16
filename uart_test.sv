@@ -71,29 +71,30 @@ class uart_reg_test extends uart_test;
         uvm_reg_data_t r2_value_before;
         uvm_reg_data_t r2_value_after;
         
+
         phase.raise_objection(this);
 
         //Reset Register Model 
         env.reg_block.reset();
         
         //Write Random Value Into R1, Check If Mirror Value == Written Value
-        value = $urandom_range(0, 15);
+        value = $urandom_range(0, 255);
         `uvm_info("REG TEST", $sformatf("Writing %0h to R1", value), UVM_MEDIUM)
 
         env.reg_block.R1.write(status, value);
 
         if (env.reg_block.R1.get_mirrored_value() != value) begin
-            `uvm_error("MIRROR", $sformatf("Mismatch! Mirror=%0h Expected=%0h",
+            `uvm_error("MIRROR", $sformatf("Mismatch! Mirror=%00h Expected=%0h",
                     env.reg_block.R1.get_mirrored_value(), value))
         end else begin
-            `uvm_info("MIRROR", $sformatf("OK: Mirror=%0h", value), UVM_MEDIUM)
+            `uvm_info("MIRROR", $sformatf("OK: Mirror=%00h", value), UVM_MEDIUM)
         end
 
         //Write Random Value to R2r
         //Expect: Transaction Goes Out On Uart Tx, Miror Remains Unchanged
 
         r2_value_before = env.reg_block.R2.get_mirrored_value();
-        value = $urandom_range(0, 15);
+        value = $urandom_range(0, 255);
         `uvm_info("REG TEST", $sformatf("Writing %0h to R2", value), UVM_MEDIUM)
 
         env.reg_block.R2.write(status, value);

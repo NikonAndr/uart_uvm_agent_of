@@ -4,6 +4,8 @@ class uart_env extends uvm_env;
     uart_agent agent;
     uart_reg_block reg_block;
     uart_reg_adapter reg_adapter;
+    uart_frontdoor_seq fd1;
+    uart_frontdoor_seq fd2;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -14,7 +16,7 @@ class uart_env extends uvm_env;
         agent = uart_agent::type_id::create("agent", this);
 
         //Create & Build Register Model (Block With R1/R2)
-        reg_block = uart_reg_block::type_id::create("reg_block", this);
+        reg_block = uart_reg_block::type_id::create("reg_block");
         reg_block.build();
 
         //Automaticly Refresh Mirror Value 
@@ -29,6 +31,14 @@ class uart_env extends uvm_env;
 
         //Pass The Sequencer And Adapter To Reg Block
         reg_block.default_map.set_sequencer(agent.sequencer, reg_adapter);
+
+        //Attach Custom Frontdoor 
+        
+        fd1 = uart_frontdoor_seq::type_id::create("fd1");
+        fd2 = uart_frontdoor_seq::type_id::create("fd2");
+
+        reg_block.R1.set_frontdoor(fd1, reg_block.default_map);
+        reg_block.R2.set_frontdoor(fd2, reg_block.default_map);
     endfunction : connect_phase
 
 endclass : uart_env

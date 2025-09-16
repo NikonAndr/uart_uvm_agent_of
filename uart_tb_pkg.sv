@@ -4,11 +4,13 @@ package uart_tb_pkg;
     `include "uvm_macros.svh"
 
     `include "uart_tx_item.sv"
+    `include "uart_op_item.sv"
     `include "uart_agent_config.sv"
 
     `include "uart_regs.sv"
     `include "uart_reg_block.sv"
     `include "uart_reg_adapter.sv"
+    `include "uart_frontdoor_seq.sv"
     
     typedef uvm_sequencer#(uart_tx_item) uart_sequencer;
     `include "uart_driver.sv"

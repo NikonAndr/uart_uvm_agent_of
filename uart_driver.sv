@@ -67,7 +67,6 @@ class uart_driver extends uvm_driver#(uart_tx_item);
 
             send_uart_frame(tx);
             seq_item_port.item_done();
-            
         end 
     endtask : run_phase
 

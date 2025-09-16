@@ -32,6 +32,7 @@ class uart_monitor extends uvm_monitor;
 
     virtual task run_phase(uvm_phase phase);
         uart_tx_item tx;
+        int frame_count = 0;
         
         forever begin
             //Check for reset
@@ -44,7 +45,8 @@ class uart_monitor extends uvm_monitor;
             #0;
         
             tx = uart_tx_item::type_id::create("tx");
-            capture_uart_frame(tx);
+            capture_uart_frame(tx, frame_count);
+            frame_count++;
         end
     endtask : run_phase
 
@@ -70,7 +72,7 @@ class uart_monitor extends uvm_monitor;
         disable fork;
     endtask : wait_bit_or_reset
 
-    task automatic capture_uart_frame(uart_tx_item tx);
+    task automatic capture_uart_frame(uart_tx_item tx, int frame_count);
         bit aborted;
         
         #half_bit
@@ -92,6 +94,13 @@ class uart_monitor extends uvm_monitor;
 
         #half_bit;
         tx.stop_bit = vif.tx;
+
+        //Set Frame Type
+        case (frame_count % 3)
+            0: tx.ft = FRAME_CMD;
+            1: tx.ft = FRAME_ADDR;
+            2: tx.ft = FRAME_DATA;
+        endcase
         
         analysis_port.write(tx);
         //Monitor Log
