@@ -33,12 +33,12 @@ class uart_agent extends uvm_agent;
             driver = uart_driver::type_id::create("driver", this);
             sequencer = uart_sequencer::type_id::create("sequencer", this);
 
-            uvm_config_db#(virtual uart_if)::set(this, "driver", "vif", vif);
+            uvm_config_db#(virtual uart_if.driver)::set(this, "driver", "vif", vif.driver);
             uvm_config_db#(uart_agent_config)::set(this, "driver", "uart_cfg", cfg);
         end
         
         monitor = uart_monitor::type_id::create("monitor", this);
-        uvm_config_db#(virtual uart_if)::set(this, "monitor", "vif", vif);
+        uvm_config_db#(virtual uart_if.monitor)::set(this, "monitor", "vif", vif.monitor);
         uvm_config_db#(uart_agent_config)::set(this, "monitor", "uart_cfg", cfg);
 
     endfunction : build_phase

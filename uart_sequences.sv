@@ -54,3 +54,25 @@ class uart_tx_seq2 extends uvm_sequence #(uart_tx_item);
         end
     endtask : body
 endclass : uart_tx_seq2
+
+class uart_3x3_seq extends uvm_sequence #(uart_tx_item);
+    `uvm_object_utils(uart_3x3_seq)
+
+    function new(string name = "uart_3x3_seq");
+        super.new(name);
+    endfunction
+
+    virtual task body();
+        repeat(3) begin
+            `uvm_create(req)
+
+            start_item(req);
+
+            //Randomize fields in transcation, in case randomization failed raise error 
+            if (!req.randomize()) begin
+                `uvm_error("RAND", "[seq3x3] Randomization failed")
+            end
+            finish_item(req);
+        end 
+    endtask : body
+endclass : uart_3x3_seq

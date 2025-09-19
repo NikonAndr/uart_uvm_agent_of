@@ -6,6 +6,7 @@ class uart_tx_item extends uvm_sequence_item;
     rand bit start_bit;
     rand bit parity_bit;
     rand bit stop_bit;
+    rand bit direction;
 
     frame_type_e ft;
 
@@ -22,8 +23,12 @@ class uart_tx_item extends uvm_sequence_item;
         super.new(name);
     endfunction
 
-    //print_tx function: start_bit data parity_bit stop_bit
+    //Decode Transaction 
     function string print_tx();
-        return $sformatf("[%s] TX TRANSACTION: %0b %08b %0b %0b", ft.name(), start_bit, data, parity_bit, stop_bit);
+        return $sformatf("%s.0x%0h.0x%0h",
+            (data[0]) ? "WRITE" : "READ",
+            data[3:1],
+            data[7:4],        
+        );
     endfunction : print_tx
 endclass : uart_tx_item

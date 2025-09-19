@@ -31,24 +31,49 @@ class uart_monitor extends uvm_monitor;
     endfunction : build_phase
 
     virtual task run_phase(uvm_phase phase);
+        fork
+            monitor_line(1);
+            monitor_line(0);
+        join_none
+    endtask : run_phase
+
+    task automatic monitor_line(bit direction);
         uart_tx_item tx;
-        int frame_count = 0;
-        
-        forever begin
-            //Check for reset
-            if (vif.rst) begin
-                @(negedge vif.rst);
+        string agent_name;
+        string sender;
+
+        forever begin 
+            if (vif.rst) @(negedge vif.rst);
+
+            if (direction) begin
+                wait (vif.tx == 0);
+                #0;
+
+                tx = uart_tx_item::type_id::create("tx");
+                capture_uart_frame(tx, direction);
+            end else begin
+                wait (vif.rx == 0);
+                #0;
+
+                tx = uart_tx_item::type_id::create("tx");
+                capture_uart_frame(tx, direction);
             end
 
-            //Wait for a start bit 
-            wait (vif.tx == 0);
-            #0;
-        
-            tx = uart_tx_item::type_id::create("tx");
-            capture_uart_frame(tx, frame_count);
-            frame_count++;
+            agent_name = get_parent().get_name();
+
+            tx.direction = direction;
+
+            analysis_port.write(tx);
+            
+            if (!direction) begin 
+                sender = (agent_name == "A1") ? "A2" : "A1";
+
+                `uvm_info("MONITOR",
+                    $sformatf("%s.%s", sender, tx.print_tx()), UVM_MEDIUM
+                );
+            end 
         end
-    endtask : run_phase
+    endtask : monitor_line
 
     task automatic wait_bit_or_reset(output bit aborted);
         aborted = 0;
@@ -72,39 +97,39 @@ class uart_monitor extends uvm_monitor;
         disable fork;
     endtask : wait_bit_or_reset
 
-    task automatic capture_uart_frame(uart_tx_item tx, int frame_count);
+    function logic get_line(bit direction);
+        return (direction) ? vif.tx : vif.rx;
+    endfunction : get_line
+
+    task automatic capture_uart_frame(uart_tx_item tx/*, int frame_count*/,bit direction);
         bit aborted;
         
         #half_bit
-        tx.start_bit = vif.tx;
+        tx.start_bit = get_line(direction);
         wait_bit_or_reset(aborted);
         if (aborted) return;
 
         for (int i = 0; i < 8; i++) begin
             #half_bit;
-            tx.data[i] = vif.tx;
+            tx.data[i] = get_line(direction);
             wait_bit_or_reset(aborted);
             if (aborted) return;
         end
 
         #half_bit;
-        tx.parity_bit = vif.tx;
+        tx.parity_bit = get_line(direction);
         wait_bit_or_reset(aborted);
         if (aborted) return;
 
         #half_bit;
-        tx.stop_bit = vif.tx;
+        tx.stop_bit = get_line(direction);
 
         //Set Frame Type
-        case (frame_count % 3)
+        /*case (frame_count % 3)
             0: tx.ft = FRAME_CMD;
             1: tx.ft = FRAME_ADDR;
             2: tx.ft = FRAME_DATA;
         endcase
-        
-        analysis_port.write(tx);
-        //Monitor Log
-        `uvm_info("MONITOR", $sformatf("Monitor captured %s", tx.print_tx()), UVM_MEDIUM)
+        */
     endtask : capture_uart_frame  
-        
 endclass : uart_monitor

@@ -3,7 +3,8 @@ interface uart_if();
 
     logic tx;
     logic rst;
+    logic rx;
 
     modport driver (input rst, output tx);
-    modport monitor (input rst, input tx);
+    modport monitor (input rst, input tx, input rx);
 endinterface : uart_if

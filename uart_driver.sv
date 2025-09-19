@@ -67,6 +67,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
 
             send_uart_frame(tx);
             seq_item_port.item_done();
+            `uvm_info("DRIVER", $sformatf("Driver sent %s", tx.print_tx()), UVM_MEDIUM)
         end 
     endtask : run_phase
 

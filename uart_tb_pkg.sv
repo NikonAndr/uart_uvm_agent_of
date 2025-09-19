@@ -18,6 +18,8 @@ package uart_tb_pkg;
     `include "uart_agent.sv"
 
     `include "uart_sequences.sv"
-    `include "uart_env.sv"
-    `include "uart_test.sv"
+    //`include "uart_env.sv"
+    //`include "uart_test.sv"
+    `include "uart_env_2_2.sv"
+    `include "uart_test_2_2.sv"
 endpackage : uart_tb_pkg
