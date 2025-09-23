@@ -20,8 +20,9 @@ class uart_frontdoor_seq extends uvm_reg_frontdoor;
     endtask : send_byte
 
     virtual task body();
+        uvm_sequence_item base_rsp;
+        uart_tx_item rsp;
         byte cmd;
-        byte data_b;
 
         //CMD : bit0 RW
         cmd = (rw_info.kind == UVM_WRITE) ? 8'h01 : 8'h00;
@@ -29,17 +30,19 @@ class uart_frontdoor_seq extends uvm_reg_frontdoor;
 
         //ADDR
         send_byte(FRAME_ADDR, byte'(rw_info.offset));
+        `uvm_info("FD_DBG", $sformatf("FD %s offset=0x%0h",
+            (rw_info.kind==UVM_WRITE)?"W":"R", byte'(rw_info.offset)), UVM_LOW)
 
-       
-
+        
         if (rw_info.kind == UVM_WRITE) begin
-            data_b = byte'(rw_info.value[0]);
+            send_byte(FRAME_DATA, byte'(rw_info.value[0]));
         end else begin
-            //Placeholder For Read
-            data_b = 8'h00;
+            get_response(base_rsp);
+            if(!$cast(rsp, base_rsp)) begin
+                `uvm_fatal("FD_SEQ", "Response is not a tx item")
+            end
+            rw_info.value[0] = rsp.data;
         end
-        send_byte(FRAME_DATA, data_b);
-
         rw_info.status = UVM_IS_OK;
     endtask : body
 endclass : uart_frontdoor_seq

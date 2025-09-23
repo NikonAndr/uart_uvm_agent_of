@@ -23,12 +23,9 @@ class uart_tx_item extends uvm_sequence_item;
         super.new(name);
     endfunction
 
-    //Decode Transaction 
     function string print_tx();
-        return $sformatf("%s.0x%0h.0x%0h",
-            (data[0]) ? "WRITE" : "READ",
-            data[3:1],
-            data[7:4],        
-        );
+        return $sformatf("%0b %8h %0b %0b",
+            start_bit, data, parity_bit, stop_bit);
     endfunction : print_tx
+
 endclass : uart_tx_item

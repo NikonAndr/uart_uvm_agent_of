@@ -3,6 +3,9 @@ class uart_agent_config extends uvm_object;
 
     //UART transmission speed in bits per second
     rand int bitrate; 
+
+    //Set Agent As Master/Slave
+    bit is_master;
     //Constraint for bitrate
     constraint bitrate_c {bitrate inside {19200, 115200};}
     

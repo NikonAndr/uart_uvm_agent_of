@@ -12,18 +12,20 @@ class uart_reg_block extends uvm_reg_block;
     virtual function void build();
         //Create & Build R1 Reg
         R1 = r1_reg::type_id::create("R1");
+        R1.configure(this, null, "");
         R1.build();
 
         //Create & Build R2 Reg
         R2 = r2_reg::type_id::create("R2");
+        R2.configure(this, null, "");
         R2.build();
 
         //Create Defaulf Register Map Starting At Base 0x0, Bus Witdh 1 Byte
         default_map = create_map("default_map", 'h0, 1, UVM_LITTLE_ENDIAN);
 
         //Configure Registers To Belong To This Block
-        R1.configure(this, null, "R1");
-        R2.configure(this, null, "R2");
+        
+        
 
         //Add Registers To The Map With Address Offsets
         default_map.add_reg(R1, 'h0, "RW");

@@ -27,7 +27,7 @@ class uart_agent extends uvm_agent;
         if(!uvm_config_db#(uvm_active_passive_enum)::get(this, "", "is_active", is_active)) begin
             `uvm_fatal("AGENT_STATUS", "Agent Status not set")
         end
-        `uvm_info("AGENT", $sformatf("configured as %s",(get_is_active()==UVM_ACTIVE) ? "ACTIVE" : "PASSIVE"), UVM_LOW)
+        `uvm_info("AGENT", $sformatf("%s configured as %s", get_name(), (get_is_active()==UVM_ACTIVE) ? "ACTIVE" : "PASSIVE"), UVM_LOW)
         
         if (get_is_active() == UVM_ACTIVE) begin
             driver = uart_driver::type_id::create("driver", this);
