@@ -9,8 +9,8 @@ package uart_tb_pkg;
 
     `include "uart_regs.sv"
     `include "uart_reg_block.sv"
-    `include "uart_reg_adapter.sv"
     `include "uart_frontdoor_seq.sv"
+    `include "uart_reg_adapter.sv"
     
     typedef uvm_sequencer#(uart_tx_item) uart_sequencer;
     `include "uart_driver.sv"

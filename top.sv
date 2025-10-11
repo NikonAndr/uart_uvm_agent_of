@@ -35,7 +35,7 @@ module top;
         end
         cfg_a1.calculate_var_ps();
         cfg_a1.is_master = 1;
-        uvm_config_db#(uart_agent_config)::set(null, "uvm_test_top.env.A1", "uart_cfg", cfg_a1);
+        uvm_config_db#(uart_agent_config)::set(null, "*.env.A1", "uart_cfg", cfg_a1);
 
         //Slave Agent Config
         cfg_a2 = uart_agent_config::type_id::create("cfg_a2");
@@ -43,14 +43,13 @@ module top;
         cfg_a2.bitrate = cfg_a1.bitrate;
         cfg_a2.calculate_var_ps();
         cfg_a2.is_master = 0;
-        uvm_config_db#(uart_agent_config)::set(null, "uvm_test_top.env.A2", "uart_cfg", cfg_a2);
+        uvm_config_db#(uart_agent_config)::set(null, "*.env.A2", "uart_cfg", cfg_a2);
 
         //Set Vif's for A1 & A2
-        uvm_config_db#(virtual uart_if)::set(null, "uvm_test_top.env.A1", "vif", vif_A1);
-        uvm_config_db#(virtual uart_if)::set(null, "uvm_test_top.env.A2", "vif", vif_A2);
+        uvm_config_db#(virtual uart_if)::set(null, "*.env.A1", "vif", vif_A1);
+        uvm_config_db#(virtual uart_if)::set(null, "*.env.A2", "vif", vif_A2);
 
         //Set Test Name Using +UVM_TESTNAME= 
-        run_test();
-        $finish;         
+        run_test();      
     end
 endmodule : top

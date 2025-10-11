@@ -9,7 +9,7 @@ class r1_reg extends uvm_reg;
     virtual function void build();
         //Build & Configure R1 (Size 4, access "RW", has_reset 1, Value After Reset 0x0)
         R1 = uvm_reg_field::type_id::create("R1");
-        R1.configure(this, 8, 0, "RW", 0, 8'h00, 1, 0, 0);
+        R1.configure(this, 8, 0, "RW", 1, 8'h00, 1, 0, 0);
     endfunction : build
 endclass : r1_reg
 
@@ -24,6 +24,6 @@ class r2_reg extends uvm_reg;
     virtual function void build();
         //Build & Configure R2 (Size 4, access "RO", has_reset 1, Value After Reset 0xA)
         R2 = uvm_reg_field::type_id::create("R2");
-        R2.configure(this, 8, 0, "RO", 0, 8'h0a, 1, 0, 0);
+        R2.configure(this, 8, 0, "RO", 1, 8'h0a, 1, 0, 0);
     endfunction : build
 endclass : r2_reg

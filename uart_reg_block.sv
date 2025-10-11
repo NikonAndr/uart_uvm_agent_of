@@ -20,13 +20,9 @@ class uart_reg_block extends uvm_reg_block;
         R2.configure(this, null, "");
         R2.build();
 
-        //Create Defaulf Register Map Starting At Base 0x0, Bus Witdh 1 Byte
+        //Create Default Register Map Starting At Base 0x0, Bus Witdh 1 Byte
         default_map = create_map("default_map", 'h0, 1, UVM_LITTLE_ENDIAN);
-
-        //Configure Registers To Belong To This Block
         
-        
-
         //Add Registers To The Map With Address Offsets
         default_map.add_reg(R1, 'h0, "RW");
         default_map.add_reg(R2, 'h1, "RO");

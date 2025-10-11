@@ -76,7 +76,7 @@ class uart_monitor extends uvm_monitor;
             who(), cmd, addr, data), UVM_MEDIUM)
     endfunction : monitor_log
 
-    task automatic wait_bit_or_reset(output bit aborted);
+    task wait_bit_or_reset(output bit aborted);
         aborted = 0;
 
         //Pre Check For Reset
@@ -98,7 +98,7 @@ class uart_monitor extends uvm_monitor;
         disable fork;
     endtask : wait_bit_or_reset
 
-    task automatic capture_uart_frame(uart_tx_item tx, bit direction);
+    task capture_uart_frame(uart_tx_item tx, bit direction);
         bit aborted;
 
         //1 -> vif.tx, 0 -> vif.rx
@@ -109,7 +109,7 @@ class uart_monitor extends uvm_monitor;
             @(negedge vif.rx);
         end
         
-        #half_bit
+        #half_bit;
         tx.start_bit = get_line(direction);
 
         wait_bit_or_reset(aborted); if (aborted) return;
@@ -128,7 +128,7 @@ class uart_monitor extends uvm_monitor;
         tx.stop_bit = get_line(direction);        
     endtask : capture_uart_frame  
 
-    task automatic monitor_line(bit direction);
+    task monitor_line(bit direction);
         uart_tx_item tx;
 
         forever begin 

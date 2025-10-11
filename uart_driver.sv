@@ -55,7 +55,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
             vif.tx <= 1'b1;
         end 
     endtask : reset_thread
-    
+
     task master_thread();
         uart_tx_item tx;
         uart_tx_item rx;
@@ -95,13 +95,36 @@ class uart_driver extends uvm_driver#(uart_tx_item);
             end
 
             //ADDR 
-            send_uart_frame(tx);
-            `uvm_info("DRIVER_MASTER", $sformatf("SENT ADDRESS %s", tx.print_tx()), UVM_MEDIUM)
             addr = tx.data;
-            seq_item_port.item_done();
-
+            
+            //IF READ - start listening BEFORE finishing ADDR transmission
+            if (!is_write) begin
+                fork
+                    begin
+                        send_uart_frame(tx);
+                        seq_item_port.item_done();
+                    end
+                    begin
+                        // Wait for ADDR frame to almost finish before listening
+                        // (start_bit + 8 data bits + parity + half of stop bit)
+                        #(full_bit * 9.5);
+                        
+                        get_uart_frame(rx);
+                        rx.ft = FRAME_DATA;
+                        rx.set_id_info(tx);
+                        
+                        seq_item_port.put_response(rx);
+                        
+                        // Give slave time to return to idle and be ready for next command
+                        #(full_bit * 2);
+                    end
+                join
+            end
             //IF WRITE
-            if (is_write) begin
+            else begin
+                send_uart_frame(tx);
+                seq_item_port.item_done();
+                
                 next_item_or_reset(tx, got_item);
                 if (!got_item) continue;
 
@@ -116,22 +139,15 @@ class uart_driver extends uvm_driver#(uart_tx_item);
                 send_uart_frame(tx);
                 seq_item_port.item_done();
             end
-            //IF READ
-            else begin
-                get_uart_frame(rx);
-                rx.ft = FRAME_DATA;
-
-                rx.set_id_info(tx);
-                seq_item_port.put_response(rx);
-            end
         end
     endtask : master_thread
-
+    
     task slave_thread();
         uart_tx_item tx;
         uart_tx_item rx;
         bit is_write;
         byte addr;
+        bit aborted;
 
         slave_state = WAIT_CMD;
         vif.tx <= 1'b1;
@@ -147,7 +163,6 @@ class uart_driver extends uvm_driver#(uart_tx_item);
                 end
                 WAIT_ADDR : begin
                     get_uart_frame(rx);
-                    `uvm_info("DRIVER_SLAVE", $sformatf("GOT ADDRESS %s", rx.print_tx()), UVM_MEDIUM)
                     addr = rx.data;
 
                     if (is_write) begin 
@@ -156,7 +171,6 @@ class uart_driver extends uvm_driver#(uart_tx_item);
                     //READ COMMAND
                     else begin
                         tx = uart_tx_item::type_id::create("tx");
-
                         tx.ft = FRAME_DATA;
                         tx.start_bit = 1'b0;
 
@@ -173,7 +187,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
 
                         tx.parity_bit = ^tx.data;
                         tx.stop_bit = 1'b1;
-
+                        
                         send_uart_frame(tx);
                         slave_state = WAIT_CMD;
                     end
@@ -181,11 +195,18 @@ class uart_driver extends uvm_driver#(uart_tx_item);
                 WAIT_DATA_WRITE : begin
                     get_uart_frame(rx);
                     
-                    if (!(addr inside {8'h0, 8'h1})) begin
+                    if (addr == 8'h0) begin
+                        reg_block.R1.predict(rx.data, .kind(UVM_PREDICT_WRITE));                      
+                    end
+                    else if (addr == 8'h1) begin
+                        reg_block.R2.predict(rx.data, .kind(UVM_PREDICT_WRITE));
+                    end
+                    else begin
                         `uvm_error("DRIVER_SLAVE", "Unknown Address")
                     end
 
                     slave_state = WAIT_CMD;
+                    is_write = 1'b0;
                 end
             endcase
         end
@@ -288,6 +309,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         
         wait_bit_or_reset(half_bit, aborted); if (aborted) return;
         rx.stop_bit = vif.rx;
+
     endtask : get_uart_frame 
 endclass : uart_driver
     
