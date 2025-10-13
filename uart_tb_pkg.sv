@@ -14,6 +14,7 @@ package uart_tb_pkg;
     
     typedef uvm_sequencer#(uart_tx_item) uart_sequencer;
     `include "uart_driver.sv"
+    `include "uart_monitor_events.sv"
     `include "uart_monitor.sv"
     `include "uart_agent.sv"
 

@@ -3,25 +3,13 @@ class uart_monitor extends uvm_monitor;
 
     virtual uart_if.monitor vif;
     uart_agent_config cfg;
+    uart_monitor_events events;
+
     //Sends captured transactions to scoreboard or other components
     uvm_analysis_port #(uart_tx_item) analysis_port;
 
     time half_bit;
-
-    typedef enum {WAIT_CMD, WAIT_ADDR, WAIT_DATA} monitor_state_e;
-    monitor_state_e state_tx, state_rx;
-
-    bit tx_is_write;
-    byte tx_addr;
-
-    bit rx_is_write;
-    bit rx_addr;
-
-    bit pending_read_expect_rx;
-    bit pending_read_addr_rx;
-    bit pending_read_expect_tx;
-    bit pending_read_addr_tx;
-
+    bit is_master;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -31,52 +19,112 @@ class uart_monitor extends uvm_monitor;
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
 
-        //Retrieve virtual interface from config DB
-        if(!uvm_config_db#(virtual uart_if.monitor)::get(this, "", "vif", vif)) begin 
+        if (!uvm_config_db#(virtual uart_if.monitor)::get(this, "", "vif", vif)) begin
             `uvm_fatal("NO_VIF", "Virtual interface not set for a monitor")
-        end 
+        end
 
-        //Retrieve configuration from config DB
-        if (!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
+        if(!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
             `uvm_fatal("NO_CFG", "uart_agent_config not set for a monitor")
         end
 
-        //Calculate Half Bit time
+        if(!uvm_config_db#(uart_monitor_events)::get(this, "", "monitor_events", events)) begin
+            `uvm_fatal("NO_EVENTS", "Monitor events not set")
+        end 
+
         half_bit = (cfg.var_ps * 1ps) / 2;
-
-        state_tx = WAIT_CMD;
-        state_rx = WAIT_CMD;
-        tx_is_write = 1'b0;
-        tx_addr = 8'h0;
-
-        pending_read_expect_rx = 1'b0;
-        pending_read_addr_rx = 8'h0;
-        pending_read_expect_tx = 1'b0;
-        pending_read_addr_tx = 8'h0;
-    endfunction : build_phase
+        is_master = cfg.is_master;
+    endfunction : build_phase 
 
     virtual task run_phase(uvm_phase phase);
-        fork
-            monitor_line(1);
-            monitor_line(0);
-        join_none
-    endtask : run_phase
+        if (is_master) begin
+            monitor_master();
+        end 
+        else begin
+            monitor_slave();
+        end
+    endtask : run_phase 
 
-    //Returns Name Of A Parent Agent
-    function string who();
-        return get_parent().get_name();
-    endfunction : who
+    function string sender();
+        string parent_name = get_parent().get_name();
+        if (parent_name == "A1")
+            return "A2";
+        else 
+            return "A1";
+    endfunction 
 
-    function logic get_line(bit direction);
-        return (direction) ? vif.tx : vif.rx;
-    endfunction : get_line
+    task monitor_master();
+        byte data;
+        byte addr;
 
-    function void monitor_log(string cmd, byte addr, byte data);
-        `uvm_info("MONITOR", $sformatf("%s.%s.0x%0h.0x%0h",
-            who(), cmd, addr, data), UVM_MEDIUM)
-    endfunction : monitor_log
+        forever begin
+            if (vif.rst) @(negedge vif.rst);
 
-    task wait_bit_or_reset(output bit aborted);
+            //Wait For Read Request 
+            events.read_request.wait_on();
+            addr = events.read_addr;
+            events.read_request.reset();
+
+            capture_frame_on_rx(data);
+            
+            //Monitor Log -> Read cmd
+            `uvm_info("MONITOR", $sformatf("%s.READ.0x%0h.0x%0h",
+                sender(), addr, data), UVM_MEDIUM)
+        end
+    endtask : monitor_master
+
+    task monitor_slave();
+        byte cmd;
+        byte addr;
+        byte data;
+        bit is_write;
+        
+        forever begin
+            if (vif.rst) @(negedge vif.rst);
+
+            //Capture Cmd
+            capture_frame_on_rx(cmd);
+            is_write = cmd[0];
+
+            //Capture Addr
+            capture_frame_on_rx(addr);
+
+            if (is_write) begin
+                //Capture Data
+                capture_frame_on_rx(data);
+
+                //Monitor Log -> Write cmd 
+                `uvm_info("MONITOR", $sformatf("%s.WRITE.0x%0h.0x%0h",
+                    sender(), addr, data), UVM_MEDIUM)
+            end 
+            else begin
+                events.trigger_read_request(addr);
+            end
+        end
+    endtask : monitor_slave
+
+    task capture_frame_on_rx(output byte data);
+        bit aborted;
+
+        @(negedge vif.rx);
+        
+        //Start Bit (Ignore)
+        #half_bit;
+        
+        for (int i = 0; i < 8; i++) begin
+            wait_half_bit_or_reset(aborted); if (aborted) return;
+            #half_bit;
+            data[i] = vif.rx;
+        end
+
+        //Parity Bit (Ignore)
+        wait_half_bit_or_reset(aborted); if (aborted) return;
+        #half_bit;
+
+        //Stop Bit (Ignore)
+        wait_half_bit_or_reset(aborted); if (aborted) return;
+    endtask : capture_frame_on_rx
+        
+    task wait_half_bit_or_reset(output bit aborted);
         aborted = 0;
 
         //Pre Check For Reset
@@ -96,112 +144,9 @@ class uart_monitor extends uvm_monitor;
             end 
         join_any 
         disable fork;
-    endtask : wait_bit_or_reset
-
-    task capture_uart_frame(uart_tx_item tx, bit direction);
-        bit aborted;
-
-        //1 -> vif.tx, 0 -> vif.rx
-        if (direction) begin
-            @(negedge vif.tx);
-        end 
-        else begin
-            @(negedge vif.rx);
-        end
-        
-        #half_bit;
-        tx.start_bit = get_line(direction);
-
-        wait_bit_or_reset(aborted); if (aborted) return;
-        
-        for (int i = 0; i < 8; i++) begin
-            #half_bit;
-            tx.data[i] = get_line(direction);
-            wait_bit_or_reset(aborted); if (aborted) return;
-        end
-
-        #half_bit;
-        tx.parity_bit = get_line(direction);
-        wait_bit_or_reset(aborted); if (aborted) return;
-        
-        #half_bit;
-        tx.stop_bit = get_line(direction);        
-    endtask : capture_uart_frame  
-
-    task monitor_line(bit direction);
-        uart_tx_item tx;
-
-        forever begin 
-            if (vif.rst) @(negedge vif.rst);
-
-            tx = uart_tx_item::type_id::create("tx");
-            capture_uart_frame(tx, direction);
-            tx.direction = direction;
-
-            if (direction) begin : on_tx
-                case (state_tx)
-                    WAIT_CMD: begin
-                        tx.ft = FRAME_CMD;
-                        tx_is_write = tx.data[0];
-                        state_tx = WAIT_ADDR;
-                    end
-                    WAIT_ADDR: begin
-                        tx.ft = FRAME_ADDR;
-                        tx_addr = tx.data;
-                        if (tx_is_write) begin 
-                            state_tx = WAIT_DATA;
-                        end 
-                        else begin 
-                            //READ request from Master
-                            pending_read_expect_rx = 1'b1;
-                            pending_read_addr_rx = tx_addr;
-                            state_tx = WAIT_CMD;
-                        end
-                    end
-                    WAIT_DATA: begin
-                        tx.ft = FRAME_DATA;
-                        monitor_log("WRITE", tx_addr, tx.data);
-                        state_tx = WAIT_CMD;
-                    end
-                endcase 
-
-                if (pending_read_expect_tx) begin 
-                    tx.ft = FRAME_DATA;
-                    monitor_log("READ", pending_read_addr_tx, tx.data);
-                    pending_read_expect_tx = 1'b0;
-                end
-            end
-            else begin : on_rx
-                case (state_rx)
-                    WAIT_CMD: begin
-                        tx.ft = FRAME_CMD;
-                        rx_is_write = tx.data[0];
-                        state_rx = WAIT_ADDR;
-                    end
-                    WAIT_ADDR: begin
-                        tx.ft = FRAME_ADDR;
-                        rx_addr = tx.data;
-                        if (rx_is_write) begin 
-                            state_rx = WAIT_DATA;
-                        end 
-                        else begin 
-                            //READ request from Master
-                            pending_read_expect_tx = 1'b1;
-                            pending_read_addr_tx = rx_addr;
-                            state_rx = WAIT_CMD;
-                        end
-                    end
-                    default : state_rx = WAIT_CMD;
-                endcase 
-
-                if (pending_read_expect_rx) begin
-                    tx.ft = FRAME_DATA;
-                    monitor_log("READ", pending_read_addr_rx, tx.data);
-                    pending_read_expect_rx = 1'b0;
-                end
-            end
-
-            analysis_port.write(tx);              
-        end
-    endtask : monitor_line
+    endtask : wait_half_bit_or_reset
 endclass : uart_monitor
+
+
+
+

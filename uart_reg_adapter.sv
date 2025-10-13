@@ -15,7 +15,6 @@ class uart_reg_adapter extends uvm_reg_adapter;
         return null;
     endfunction : reg2bus
 
-    //Convert Uart Transaction Back To Register Operation
     virtual function void bus2reg(uvm_sequence_item bus_item, ref uvm_reg_bus_op rw);
         rw.status = UVM_IS_OK;
     endfunction : bus2reg

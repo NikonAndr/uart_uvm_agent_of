@@ -7,6 +7,7 @@ class uart_env extends uvm_env;
     uart_reg_adapter reg_adapter;
     uart_frontdoor_seq fd1;
     uart_frontdoor_seq fd2;
+    uart_monitor_events events;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -16,6 +17,8 @@ class uart_env extends uvm_env;
         super.build_phase(phase);
         A1 = uart_agent::type_id::create("A1", this);
         A2 = uart_agent::type_id::create("A2", this);
+
+        events = uart_monitor_events::type_id::create("events");
 
         //Create & Build Register Model (Block With R1/R2)
         reg_block = uart_reg_block::type_id::create("reg_block");
@@ -33,6 +36,10 @@ class uart_env extends uvm_env;
 
         //Pass RB to A2.driver
         uvm_config_db#(uart_reg_block)::set(this, "A2.driver", "reg_block", reg_block);
+
+        //Pass Events to Both A1 & A2 monitors 
+        uvm_config_db#(uart_monitor_events)::set(this, "A1.monitor", "monitor_events", events);
+        uvm_config_db#(uart_monitor_events)::set(this, "A2.monitor", "monitor_events", events);
     endfunction : build_phase
 
     function void connect_phase(uvm_phase phase);
