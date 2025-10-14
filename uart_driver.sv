@@ -19,8 +19,6 @@ class uart_driver extends uvm_driver#(uart_tx_item);
     virtual function void build_phase(uvm_phase phase);
         super.build_phase(phase);
 
-        uvm_config_db#(uart_reg_block)::get(this, "", "reg_block", reg_block);
-
         if(!uvm_config_db#(virtual uart_if.driver)::get(this, "", "vif", vif)) begin
             `uvm_fatal("NO_VIF", "VIF not set for a Driver")
         end
@@ -28,6 +26,13 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         if(!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
             `uvm_fatal("NO_CFG", "Configuration object not set for a Driver")
         end 
+
+        if(!uvm_config_db#(uart_reg_block)::get(this, "", "reg_block", reg_block) || reg_block == null) begin
+            if (!cfg.is_master) begin
+                //Only Slave Driver Uses reg_block
+                `uvm_fatal("NO_REG_BLOCK", "reg_block not set for a Driver")
+            end
+        end
 
         full_bit = (cfg.var_ps * 1ps);
         half_bit = (cfg.var_ps * 1ps) / 2;
@@ -182,7 +187,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
                         end 
                         else begin
                             tx.data = 8'hff;
-                            `uvm_error("DRIVER_SLAVE", "Unknown Address")
+                            `uvm_error("Session limit reached ∙ resets 12:00 AMDRIVER_SLAVE", "Unknown Address")
                         end
 
                         tx.parity_bit = ^tx.data;
@@ -196,10 +201,14 @@ class uart_driver extends uvm_driver#(uart_tx_item);
                     get_uart_frame(rx);
                     
                     if (addr == 8'h0) begin
-                        reg_block.R1.predict(rx.data, .kind(UVM_PREDICT_WRITE));                      
+                        if(!reg_block.R1.predict(rx.data, .kind(UVM_PREDICT_WRITE))) begin
+                            `uvm_error("PREDICT", "Failed to predict R1")
+                        end                      
                     end
                     else if (addr == 8'h1) begin
-                        reg_block.R2.predict(rx.data, .kind(UVM_PREDICT_WRITE));
+                        if(!reg_block.R2.predict(rx.data, .kind(UVM_PREDICT_WRITE))) begin
+                            `uvm_error("PREDICT", "Failed to predict R2")
+                        end
                     end
                     else begin
                         `uvm_error("DRIVER_SLAVE", "Unknown Address")
@@ -235,7 +244,7 @@ class uart_driver extends uvm_driver#(uart_tx_item);
         if (p_rst != null && p_rst.status==process::RUNNING) p_rst.kill();
     endtask : next_item_or_reset
 
-    task automatic wait_bit_or_reset(time wait_time, output bit aborted);
+    task wait_bit_or_reset(time wait_time, output bit aborted);
         aborted = 1'b0;
 
         if (vif.rst) begin
