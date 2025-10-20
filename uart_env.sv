@@ -7,7 +7,7 @@ class uart_env extends uvm_env;
     uart_reg_adapter reg_adapter;
     uart_frontdoor_seq fd1;
     uart_frontdoor_seq fd2;
-    uart_monitor_events events;
+    uart_scoreboard scoreboard;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -17,8 +17,7 @@ class uart_env extends uvm_env;
         super.build_phase(phase);
         A1 = uart_agent::type_id::create("A1", this);
         A2 = uart_agent::type_id::create("A2", this);
-
-        events = uart_monitor_events::type_id::create("events");
+        scoreboard = uart_scoreboard::type_id::create("scoreboard", this);
 
         //Create & Build Register Model (Block With R1/R2)
         reg_block = uart_reg_block::type_id::create("reg_block");
@@ -37,9 +36,6 @@ class uart_env extends uvm_env;
         //Pass RB to A2.driver
         uvm_config_db#(uart_reg_block)::set(this, "A2.driver", "reg_block", reg_block);
 
-        //Pass Events to Both A1 & A2 monitors 
-        uvm_config_db#(uart_monitor_events)::set(this, "A1.monitor", "monitor_events", events);
-        uvm_config_db#(uart_monitor_events)::set(this, "A2.monitor", "monitor_events", events);
     endfunction : build_phase
 
     function void connect_phase(uvm_phase phase);
@@ -54,6 +50,13 @@ class uart_env extends uvm_env;
 
         reg_block.R1.set_frontdoor(fd1, reg_block.default_map);
         reg_block.R2.set_frontdoor(fd2, reg_block.default_map);
+
+        //Connect monitor ap export to scoreboard ap import 
+        A1.monitor.tx_analysis_port.connect(scoreboard.a1_tx_imp);
+        A1.monitor.rx_analysis_port.connect(scoreboard.a1_rx_imp);
+        A2.monitor.tx_analysis_port.connect(scoreboard.a2_tx_imp);
+        A2.monitor.rx_analysis_port.connect(scoreboard.a2_rx_imp);
+
     endfunction : connect_phase
 
 endclass : uart_env

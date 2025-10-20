@@ -1,5 +1,5 @@
-class uart_test_2_3 extends uvm_test;
-    `uvm_component_utils(uart_test_2_3)
+class uart_test_2_4 extends uvm_test;
+    `uvm_component_utils(uart_test_2_4)
 
     uart_env env;
 
@@ -40,4 +40,4 @@ class uart_test_2_3 extends uvm_test;
 
         phase.drop_objection(this);
     endtask : run_phase
-endclass : uart_test_2_3
+endclass : uart_test_2_4

@@ -3,128 +3,77 @@ class uart_monitor extends uvm_monitor;
 
     virtual uart_if.monitor vif;
     uart_agent_config cfg;
-    uart_monitor_events events;
-
     //Sends captured transactions to scoreboard or other components
-    uvm_analysis_port #(uart_tx_item) analysis_port;
+    uvm_analysis_port #(uart_tx_item) tx_analysis_port;
+    uvm_analysis_port #(uart_tx_item) rx_analysis_port;
+
 
     time half_bit;
-    bit is_master;
-
+         
     function new(string name, uvm_component parent);
         super.new(name, parent);
-        analysis_port = new("analysis_port", this);
+        tx_analysis_port = new("tx_analysis_port", this);
+        rx_analysis_port = new("rx_analysis_port", this);
     endfunction
 
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
 
-        if (!uvm_config_db#(virtual uart_if.monitor)::get(this, "", "vif", vif)) begin
+        //Retrieve virtual interface from config DB
+        if(!uvm_config_db#(virtual uart_if.monitor)::get(this, "", "vif", vif)) begin 
             `uvm_fatal("NO_VIF", "Virtual interface not set for a monitor")
-        end
+        end 
 
-        if(!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
+        //Retrieve configuration from config DB
+        if (!uvm_config_db#(uart_agent_config)::get(this, "", "uart_cfg", cfg) || cfg == null) begin
             `uvm_fatal("NO_CFG", "uart_agent_config not set for a monitor")
         end
 
-        if(!uvm_config_db#(uart_monitor_events)::get(this, "", "monitor_events", events)) begin
-            `uvm_fatal("NO_EVENTS", "Monitor events not set")
-        end 
-
+        //Calculate Half Bit time
         half_bit = (cfg.var_ps * 1ps) / 2;
-        is_master = cfg.is_master;
-    endfunction : build_phase 
+    endfunction : build_phase
 
     virtual task run_phase(uvm_phase phase);
-        if (is_master) begin
-            monitor_master();
-        end 
-        else begin
-            monitor_slave();
-        end
-    endtask : run_phase 
+        fork
+            monitor_line(1);
+            monitor_line(0);
+        join_none
+    endtask : run_phase
 
-    function string sender();
-        string parent_name = get_parent().get_name();
-        if (parent_name == "A1")
-            return "A2";
-        else 
-            return "A1";
-    endfunction 
+    task monitor_line(bit direction);
+        uart_tx_item tx;
+        string agent_name;
 
-    task monitor_master();
-        byte data;
-        byte addr;
-
-        forever begin
+        forever begin 
             if (vif.rst) @(negedge vif.rst);
 
-            //Wait For Read Request 
-            events.read_request.wait_on();
-            addr = events.read_addr;
-            events.read_request.reset();
+            if (direction) begin
+                wait (vif.tx == 0);
+                #0;
 
-            capture_frame_on_rx(data);
-            
-            //Monitor Log -> Read cmd
-            `uvm_info("MONITOR", $sformatf("%s.READ.0x%0h.0x%0h",
-                sender(), addr, data), UVM_MEDIUM)
-        end
-    endtask : monitor_master
+                tx = uart_tx_item::type_id::create("tx");
+                capture_uart_frame(tx, direction);
+            end else begin
+                wait (vif.rx == 0);
+                #0;
 
-    task monitor_slave();
-        byte cmd;
-        byte addr;
-        byte data;
-        bit is_write;
-        
-        forever begin
-            if (vif.rst) @(negedge vif.rst);
+                tx = uart_tx_item::type_id::create("tx");
+                capture_uart_frame(tx, direction);
+            end
 
-            //Capture Cmd
-            capture_frame_on_rx(cmd);
-            is_write = cmd[0];
+            tx.direction = direction;
 
-            //Capture Addr
-            capture_frame_on_rx(addr);
-
-            if (is_write) begin
-                //Capture Data
-                capture_frame_on_rx(data);
-
-                //Monitor Log -> Write cmd 
-                `uvm_info("MONITOR", $sformatf("%s.WRITE.0x%0h.0x%0h",
-                    sender(), addr, data), UVM_MEDIUM)
-            end 
+            //Write transaction to ap port based on direction
+            if (tx.direction) begin
+                tx_analysis_port.write(tx);
+            end
             else begin
-                events.trigger_read_request(addr);
+                rx_analysis_port.write(tx);
             end
         end
-    endtask : monitor_slave
+    endtask : monitor_line
 
-    task capture_frame_on_rx(output byte data);
-        bit aborted;
-
-        @(negedge vif.rx);
-        
-        //Start Bit (Ignore)
-        #half_bit;
-        
-        for (int i = 0; i < 8; i++) begin
-            wait_half_bit_or_reset(aborted); if (aborted) return;
-            #half_bit;
-            data[i] = vif.rx;
-        end
-
-        //Parity Bit (Ignore)
-        wait_half_bit_or_reset(aborted); if (aborted) return;
-        #half_bit;
-
-        //Stop Bit (Ignore)
-        wait_half_bit_or_reset(aborted); if (aborted) return;
-    endtask : capture_frame_on_rx
-        
-    task wait_half_bit_or_reset(output bit aborted);
+    task wait_bit_or_reset(output bit aborted);
         aborted = 0;
 
         //Pre Check For Reset
@@ -144,9 +93,34 @@ class uart_monitor extends uvm_monitor;
             end 
         join_any 
         disable fork;
-    endtask : wait_half_bit_or_reset
+    endtask : wait_bit_or_reset
+
+    function logic get_line(bit direction);
+        return (direction) ? vif.tx : vif.rx;
+    endfunction : get_line
+
+    task capture_uart_frame(uart_tx_item tx, bit direction);
+        bit aborted;
+        
+        #half_bit
+        tx.start_bit = get_line(direction);
+        wait_bit_or_reset(aborted);
+        if (aborted) return;
+
+        for (int i = 0; i < 8; i++) begin
+            #half_bit;
+            tx.data[i] = get_line(direction);
+            wait_bit_or_reset(aborted);
+            if (aborted) return;
+        end
+
+        #half_bit;
+        tx.parity_bit = get_line(direction);
+        wait_bit_or_reset(aborted);
+        if (aborted) return;
+
+        #half_bit;
+        tx.stop_bit = get_line(direction);
+
+    endtask : capture_uart_frame  
 endclass : uart_monitor
-
-
-
-
