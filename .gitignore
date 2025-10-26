@@ -1,2 +1,9 @@
 dsim.env
 dsim.log
+uart_env_2_2.sv
+uart_monitor_2_2.sv
+uart_monitor_events.sv
+uart_op_item.sv
+uart_sequences.sv
+uart_test_2_2.sv
+uart_test.sv
